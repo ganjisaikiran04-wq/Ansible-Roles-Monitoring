@@ -1,8 +1,6 @@
-- name: Update system
+- name: Update apt cache
   apt:
     update_cache: yes
-    upgrade: dist
-
 - name: Install base packages
   apt:
     name:

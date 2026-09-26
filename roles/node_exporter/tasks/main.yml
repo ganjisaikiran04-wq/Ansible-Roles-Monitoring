@@ -1,34 +1,49 @@
-- name: Create user
+- name: Create node_exporter user
   user:
     name: node_exporter
     shell: /bin/false
+    create_home: no
 
-- name: Download
+- name: Download Node Exporter
   get_url:
     url: https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
-    dest: /tmp/node.tar.gz
+    dest: /tmp/node_exporter.tar.gz
 
-- name: Extract
+- name: Extract Node Exporter
   unarchive:
-    src: /tmp/node.tar.gz
+    src: /tmp/node_exporter.tar.gz
     dest: /tmp/
     remote_src: yes
 
-- name: Copy binary
+- name: Copy Node Exporter binary
   copy:
     src: /tmp/node_exporter-1.8.2.linux-amd64/node_exporter
-    dest: /usr/local/bin/
+    dest: /usr/local/bin/node_exporter
     mode: '0755'
     remote_src: yes
 
-- name: Service
+- name: Create Node Exporter service
   copy:
     dest: /etc/systemd/system/node_exporter.service
     content: |
-      [Service]
-      ExecStart=/usr/local/bin/node_exporter
+      [Unit]
+      Description=Node Exporter
+      After=network.target
 
-- name: Start
+      [Service]
+      User=node_exporter
+      Group=node_exporter
+      ExecStart=/usr/local/bin/node_exporter
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Start Node Exporter
   systemd:
     name: node_exporter
     enabled: yes

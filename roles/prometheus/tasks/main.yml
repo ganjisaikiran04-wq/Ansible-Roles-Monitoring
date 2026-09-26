@@ -68,3 +68,12 @@
     name: prometheus
     enabled: yes
     state: started
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Start Prometheus
+  systemd:
+    name: prometheus
+    enabled: yes
+    state: started
