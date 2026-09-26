@@ -1,0 +1,87 @@
+# 1. Create prometheus user (safe)
+- name: Create prometheus user
+  user:
+    name: prometheus
+    shell: /bin/false
+    create_home: no
+
+# 2. Create directories
+- name: Create alertmanager directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  loop:
+    - /etc/alertmanager
+    - /var/lib/alertmanager
+
+# 3. Download Alertmanager
+- name: Download Alertmanager
+  get_url:
+    url: https://github.com/prometheus/alertmanager/releases/download/v0.27.0/alertmanager-0.27.0.linux-amd64.tar.gz
+    dest: /tmp/alertmanager.tar.gz
+
+# 4. Extract
+- name: Extract Alertmanager
+  unarchive:
+    src: /tmp/alertmanager.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+# 5. Copy binaries
+- name: Copy binaries
+  copy:
+    src: "/tmp/alertmanager-0.27.0.linux-amd64/{{ item }}"
+    dest: /usr/local/bin/
+    mode: '0755'
+    remote_src: yes
+  loop:
+    - alertmanager
+    - amtool
+
+# 6. Config file
+- name: Create config
+  copy:
+    dest: /etc/alertmanager/alertmanager.yml
+    owner: prometheus
+    group: prometheus
+    content: |
+      route:
+        receiver: pagerduty
+
+      receivers:
+        - name: pagerduty
+          pagerduty_configs:
+            - routing_key: "YOUR_KEY"
+
+# 7. Create systemd service (IMPORTANT)
+- name: Create alertmanager service
+  copy:
+    dest: /etc/systemd/system/alertmanager.service
+    content: |
+      [Unit]
+      Description=Alertmanager
+      After=network.target
+
+      [Service]
+      User=prometheus
+      ExecStart=/usr/local/bin/alertmanager \
+        --config.file=/etc/alertmanager/alertmanager.yml \
+        --storage.path=/var/lib/alertmanager
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+# 8. Reload systemd
+- name: Reload systemd
+  command: systemctl daemon-reexec
+
+# 9. Start service
+- name: Start alertmanager
+  systemd:
+    name: alertmanager
+    enabled: yes
+    state: started

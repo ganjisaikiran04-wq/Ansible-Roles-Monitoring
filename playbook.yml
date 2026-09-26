@@ -1,0 +1,16 @@
+- name: Setup Monitoring Server
+  hosts: monitor
+  become: yes
+  roles:
+    - common
+    - prometheus
+    - grafana
+    - node_exporter
+    #- alertmanager
+
+- name: Setup Node Exporter on all nodes
+  hosts: nodes
+  become: yes
+  roles:
+    - common
+    - node_exporter
