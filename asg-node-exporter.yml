@@ -1,0 +1,8 @@
+---
+- name: Install Node Exporter on new ASG instances
+  hosts: all
+  become: yes
+
+  roles:
+    - common
+    - node_exporter
